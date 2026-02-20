@@ -1,0 +1,161 @@
+/**
+ * Global Styles
+ * ==============
+ * Imports Tailwind's layers and adds custom Valentine's theme CSS:
+ *   - Grid background pattern for the landing page
+ *   - Photo frame glow effects on hover
+ *   - Custom scrollbar styling
+ *   - Smooth scroll behaviour
+ *   - Typography overrides for text blocks (poem, testimonial, etc.)
+ *
+ * All custom properties (CSS variables) are defined here so they can be
+ * referenced by both Tailwind utilities and raw CSS rules.
+ */
+
+/* ===================================================================
+   Tailwind Layers
+   =================================================================== */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================================================================
+   CSS Custom Properties (Design Tokens)
+   =================================================================== */
+:root {
+  /* Background & surface colours */
+  --color-bg-primary:     #ffffff;
+  --color-bg-surface:     #fff5f5;
+  --color-bg-surface-alt: #ffe4e6;
+
+  /* Grid pattern — disabled for the new light theme */
+  --grid-color: rgba(0, 0, 0, 0.0);
+  --grid-size:  60px;
+
+  /* Glow effect for photo frames */
+  --glow-pink: rgba(236, 72, 153, 0.35);
+  --glow-red:  rgba(239, 68, 68, 0.25);
+}
+
+/* ===================================================================
+   Base Layer Overrides
+   =================================================================== */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+   body {
+    @apply text-gray-800 font-body;
+    overflow-x: hidden;
+    background: linear-gradient(
+      to bottom,
+      #dc2626 0%,        /* Red at the top */
+      #ec4899 25%,       /* Pink */
+      #fbcfe8 50%,       /* Light pink */
+      #ffffff 75%,       /* White */
+      #ffffff 100%
+    );
+    background-attachment: fixed;
+  }
+
+  /* Readable max-width for long-form text */
+  p, li {
+    max-width: 65ch;
+  }
+
+  /* Selection highlight matching the theme */
+  ::selection {
+    @apply bg-valentine-pink-300/40 text-valentine-red-900;
+  }
+}
+
+/* ===================================================================
+   Component Layer
+   =================================================================== */
+@layer components {
+  /* ---- Grid background (landing page & timeline) ---- */
+  .grid-bg {
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+  }
+
+  /* ---- Photo frame styling ---- */
+  .photo-frame {
+    @apply border-2 border-white/20 rounded-sm overflow-hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .photo-frame:hover {
+    @apply border-valentine-pink-400/60;
+    box-shadow:
+      0 0 20px var(--glow-pink),
+      0 0 40px var(--glow-red);
+    transform: scale(1.04);
+  }
+
+  /* ---- Milestone card ---- */
+  .milestone-card {
+    @apply relative border border-valentine-pink-500/30 rounded-lg p-6 md:p-8;
+    background: linear-gradient(
+      135deg,
+      rgba(236, 72, 153, 0.08) 0%,
+      rgba(239, 68, 68, 0.06) 100%
+    );
+  }
+
+  /* ---- Text block variants ---- */
+  .text-poem {
+    @apply text-center italic leading-relaxed text-valentine-red-700;
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+
+  .text-testimonial {
+    @apply pl-4 md:pl-6 border-l-2 border-valentine-pink-500/50 italic text-gray-600;
+  }
+
+  .text-description,
+  .text-paragraph {
+    @apply leading-relaxed text-gray-700;
+  }
+}
+
+/* ===================================================================
+   Utility Layer
+   =================================================================== */
+@layer utilities {
+  /* Fade-in on scroll (used with Intersection Observer) */
+  .fade-in-up {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+
+  .fade-in-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===================================================================
+   Custom Scrollbar
+   =================================================================== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-valentine-pink-400 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-valentine-pink-500;
+}

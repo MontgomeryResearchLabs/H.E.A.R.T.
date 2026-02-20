@@ -1,0 +1,25 @@
+{
+  "id": "first-date",
+  "date": "2023-12-16T20:00:00-04:00",
+  "type": "photo",
+  "location": {
+    "name": "Gatlinburg, Tennessee",
+    "latitude": 35.71482548365091, 
+    "longitude": -83.50552861451759
+  },
+  "images": [
+    {
+      "src": "/src/assets/images/2026/12/3.jpg",
+      "alt": "Fourth of July fireworks over the city skyline"
+    },
+    {
+      "src": "/src/assets/images/2026/12/4.jpg",
+      "alt": "gingerbread ornanments",
+      "caption": "Our first out of town trip together for the holidays"
+    }, 
+    {
+      "src": "/src/assets/images/2026/12/5.jpg",
+      "alt": "Our first selfie together under the fireworks"
+    }
+  ]
+}

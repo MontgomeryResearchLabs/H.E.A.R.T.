@@ -1,0 +1,151 @@
+---
+/**
+ * AnniversaryCounter.astro — Relationship Duration Widget
+ * =========================================================
+ * A fixed-position widget that displays how long the couple has been
+ * together ("X years, Y months, Z days").
+ *
+ * Server-Rendered
+ * ----------------
+ * The initial count is computed at build time (or request time in SSR)
+ * using the accurate `getTimeDifference` utility. A small inline
+ * <script> updates the display at midnight local time so the counter
+ * stays accurate for visitors who leave the page open.
+ *
+ * Special Anniversary Styling
+ * ---------------------------
+ * On July 4 the widget pulses with a brighter pink glow to celebrate
+ * the couple's anniversary.
+ *
+ * Accessibility
+ * -------------
+ * - Uses `role="status"` + `aria-live="polite"` so screen readers
+ *   announce updates without interrupting the user.
+ * - All text has sufficient colour contrast against the dark backdrop.
+ */
+
+import {
+  RELATIONSHIP_START,
+  getTimeDifference,
+  formatTimeDifference,
+  isAnniversary,
+} from '../utils/dateUtils';
+
+// Calculate the time difference at build/render time
+const now  = new Date();
+const diff = getTimeDifference(RELATIONSHIP_START, now);
+const text = formatTimeDifference(diff);
+const anniversary = isAnniversary(now);
+---
+
+<div
+  id="anniversary-counter"
+  role="status"
+  aria-live="polite"
+  class:list={[
+    // Positioning: fixed to the bottom-left on desktop, top on mobile
+    'fixed z-50',
+    'bottom-4 left-4 md:bottom-6 md:left-6',
+    // Sizing & padding
+    'px-4 py-3 md:px-5 md:py-3.5',
+    // Visual styling
+    'rounded-xl border backdrop-blur-md',
+    'bg-black/50',
+    'font-sans text-xs md:text-sm',
+    // Anniversary-specific glow
+    anniversary
+      ? 'border-valentine-pink-400 shadow-lg shadow-valentine-pink-500/30 animate-soft-pulse'
+      : 'border-white/10',
+  ]}
+>
+  <!-- Label -->
+  <p class="text-white/50 text-[10px] md:text-xs uppercase tracking-widest mb-0.5">
+    Together for
+  </p>
+
+  <!-- Dynamic counter value -->
+  <p
+    id="counter-value"
+    class="text-valentine-pink-300 font-display font-bold tracking-wide"
+  >
+    {text}
+  </p>
+
+  {anniversary && (
+    <p class="text-valentine-pink-400 text-[10px] mt-1">🎉 Happy Anniversary!</p>
+  )}
+</div>
+
+<!--
+  Client-side script: re-calculates the counter at midnight local time
+  so it stays accurate without a full page reload.
+-->
+<script>
+  /**
+   * Lightweight client-side updater for the anniversary counter.
+   *
+   * How it works:
+   * 1. On page load, compute ms until local midnight.
+   * 2. Schedule a `setTimeout` to run at midnight.
+   * 3. At midnight, recalculate the counter text and update the DOM.
+   * 4. Schedule the next update for the following midnight.
+   */
+  function updateCounterAtMidnight(): void {
+    const START = new Date('2023-07-04T00:00:00-04:00');
+
+    /** Same algorithm as getTimeDifference on the server. */
+    function calcDiff(start: Date, end: Date) {
+      let years = end.getFullYear() - start.getFullYear();
+      if (
+        end.getMonth() < start.getMonth() ||
+        (end.getMonth() === start.getMonth() && end.getDate() < start.getDate())
+      ) {
+        years--;
+      }
+
+      let months = end.getMonth() - start.getMonth();
+      if (months < 0) months += 12;
+      if (end.getDate() < start.getDate()) {
+        months--;
+        if (months < 0) {
+          months += 12;
+          years--;
+        }
+      }
+
+      const adv = new Date(start);
+      adv.setFullYear(adv.getFullYear() + years);
+      adv.setMonth(adv.getMonth() + months);
+      const days = Math.floor((end.getTime() - adv.getTime()) / 86400000);
+
+      return { years, months, days };
+    }
+
+    function format(d: { years: number; months: number; days: number }): string {
+      const parts: string[] = [];
+      if (d.years > 0)  parts.push(`${d.years} year${d.years !== 1 ? 's' : ''}`);
+      if (d.months > 0) parts.push(`${d.months} month${d.months !== 1 ? 's' : ''}`);
+      if (d.days > 0)   parts.push(`${d.days} day${d.days !== 1 ? 's' : ''}`);
+      return parts.length ? parts.join(', ') : 'Today is the day!';
+    }
+
+    function scheduleNextUpdate(): void {
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const msUntilMidnight = tomorrow.getTime() - now.getTime();
+
+      setTimeout(() => {
+        const el = document.getElementById('counter-value');
+        if (el) {
+          el.textContent = format(calcDiff(START, new Date()));
+        }
+        // Schedule the next midnight update recursively
+        scheduleNextUpdate();
+      }, msUntilMidnight);
+    }
+
+    scheduleNextUpdate();
+  }
+
+  document.addEventListener('DOMContentLoaded', updateCounterAtMidnight);
+</script>

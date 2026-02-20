@@ -1,0 +1,16 @@
+{
+  "id": "third-date",
+  "date": "2023-07-28T20:00:00-04:00",
+  "type": "photo",
+  "images": [
+    {
+      "src": "/src/assets/images/2026/12/1.jpg",
+      "alt": "Fourth of July fireworks over the city skyline",
+      "caption": "Our third date hike to the bamboo forest"
+    },
+    {
+      "src": "/src/assets/images/2026/12/2.jpg",
+      "alt": " posing in the bamboo forest"
+    }
+  ]
+}

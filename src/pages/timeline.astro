@@ -1,0 +1,193 @@
+---
+/**
+ * timeline.astro — Main Timeline Page
+ * =====================================
+ * Displays all timeline entries in strict chronological order
+ * (oldest at top, newest at bottom), with:
+ *   - Month group headers for CalendarNav scroll targets
+ *   - AnniversaryCounter widget (fixed, bottom-left)
+ *   - MusicPlayer widget (fixed, bottom-right)
+ *   - CalendarNav button (fixed, top-right)
+ *   - LightboxViewer overlay (rendered once, event-driven)
+ *
+ * Data Flow
+ * ---------
+ * 1. Fetch all entries from the "timeline" content collection
+ * 2. Sort by date ascending
+ * 3. Group by month (for section headers + CalendarNav highlights)
+ * 4. Render each entry via <TimelineEntry />
+ *
+ * Performance
+ * -----------
+ * All timeline content is rendered server-side (static HTML). Only the
+ * interactive islands (CalendarNav, MusicPlayer, LightboxViewer) ship
+ * JavaScript to the client.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TimelineEntry from '../components/TimelineEntry.astro';
+import AnniversaryCounter from '../components/AnniversaryCounter.astro';
+import CalendarNav from '../components/CalendarNav.tsx';
+import MusicPlayer from '../components/MusicPlayer.tsx';
+import LightboxViewer from '../components/LightboxViewer.tsx';
+import MapViewer from '../components/MapViewer.tsx';
+import { getCollection } from 'astro:content';
+import { getMonthKey } from '../utils/dateUtils';
+import PhotoViewer3D from '../components/PhotoViewer3D.tsx';
+
+
+
+// ---- Fetch and sort all timeline entries ----
+const allEntries = await getCollection('timeline');
+const sortedEntries = allEntries.sort(
+  (a, b) => a.data.date.getTime() - b.data.date.getTime(),
+);
+
+
+
+// ---- Build month groups for section headers & calendar nav ----
+interface MonthGroup {
+  key: string;       // "YYYY-MM"
+  label: string;     // "July 2023"
+  entries: typeof sortedEntries;
+}
+
+const monthGroupMap = new Map<string, MonthGroup>();
+
+for (const entry of sortedEntries) {
+  const key = getMonthKey(entry.data.date);
+
+  if (!monthGroupMap.has(key)) {
+    const label = entry.data.date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+    });
+    monthGroupMap.set(key, { key, label, entries: [] });
+  }
+
+  monthGroupMap.get(key)!.entries.push(entry);
+}
+
+
+
+const monthGroups = Array.from(monthGroupMap.values());
+
+// Array of month keys that have content (passed to CalendarNav)
+const contentMonths = monthGroups.map((g) => g.key);
+
+// ---- Extract locations for the map viewer ----
+// Filters timeline entries that have a location and builds the data
+// array that MapViewer needs for its Leaflet pins
+const mapLocations = sortedEntries
+  .filter((entry) => entry.data.location)
+  .map((entry) => ({
+    id: entry.data.id,
+    name: entry.data.location!.name,
+    latitude: entry.data.location!.latitude,
+    longitude: entry.data.location!.longitude,
+    date: entry.data.date.toISOString(),
+    type: entry.data.type,
+    thumbnail: entry.data.images?.[0]?.src,
+  }));
+
+  // Collect all images from timeline entries for the 3D gallery
+const galleryImages = sortedEntries
+  .filter((e) => e.data.images && e.data.images.length > 0)
+  .flatMap((e) =>
+    e.data.images!.map((img) => ({
+      src: img.src,
+      alt: img.alt,
+      caption: img.caption || '',
+      entryId: e.data.id,
+      date: e.data.date.toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      }),
+    }))
+  );
+
+
+// Placeholder track list (add real audio files later)
+const musicTracks = [
+  // Uncomment and add real tracks:
+  { title: 'Lady', src: 'public/audio/DAngelo - Lady.mp3' },
+  { title: 'Cupid', src: 'public/audio/Cupid.mp3' },
+  { title: 'Luther', src: 'public/audio/Kendrick Lamar - luther (Official Audio).mp3' },
+  { title: 'Ill Make Love To You', src: 'public/audio/Ill Make Love To You.mp3' },
+];
+---
+
+<BaseLayout title="Timeline — relationship">
+ <!-- Fixed interactive widgets (React islands) -->
+<AnniversaryCounter />
+<CalendarNav contentMonths={contentMonths} client:load />
+<MapViewer locations={mapLocations} client:load />
+<MusicPlayer tracks={musicTracks} client:load />
+<LightboxViewer client:load />
+
+<!-- 3D Gallery — positioned above the yearbook button -->
+<div class="fixed bottom-32 left-6 z-[60]">
+  <PhotoViewer3D images={galleryImages} client:load />
+</div>
+
+  <!-- Navigation back to landing page -->
+  <header class="fixed top-4 left-4 md:top-6 md:left-6 z-40">
+    <a
+      href="/"
+      class="font-display text-lg md:text-xl text-valentine-red-700 tracking-[0.2em] uppercase hover:text-valentine-pink-500 transition-colors duration-300"
+    >
+      relationship timeline
+    </a>
+  </header>
+
+  <!-- Timeline content area -->
+  <main class="relative max-w-6xl mx-auto pt-20 md:pt-28 pb-32">
+
+    <!-- Page heading (visually subtle, SEO-relevant) -->
+    <h1 class="text-center font-display text-3xl md:text-4xl text-valentine-red-800 mb-2">
+      Our Timeline
+    </h1>
+    <p class="text-center font-body text-sm text-valentine-pink-600 italic mb-16 md:mb-24">
+      Every moment that made us, us
+    </p>
+
+    <!-- Vertical timeline line (decorative) -->
+    <div
+      class="hidden md:block absolute left-1/2 top-48 bottom-32 w-px bg-gradient-to-b from-transparent via-valentine-pink-400/40 to-transparent"
+      aria-hidden="true"
+    >
+    </div>
+
+    <!-- Render month groups -->
+    {monthGroups.map((group) => (
+      <section id={`month-${group.key}`} class="mb-8 md:mb-12">
+        <!-- Month/Year header — serves as the CalendarNav scroll target -->
+        <h2 class="text-center font-display text-lg md:text-xl text-valentine-red-600 mb-6 md:mb-10 tracking-wider">
+          {group.label}
+        </h2>
+
+        <!-- Entries within this month -->
+        {group.entries.map((entry) => (
+          <TimelineEntry
+            id={entry.data.id}
+            date={entry.data.date}
+            type={entry.data.type}
+            images={entry.data.images}
+            videos={entry.data.videos}
+            content={entry.data.content}
+            textType={entry.data.textType}
+            milestone={entry.data.milestone}
+          />
+        ))}
+      </section>
+    ))}
+
+    <!-- End-of-timeline marker -->
+    <div class="text-center py-12">
+      <span class="text-2xl" role="img" aria-label="Heart">💕</span>
+      <p class="mt-2 text-sm text-valentine-pink-400 font-sans">
+        To be continued…
+      </p>
+    </div>
+  </main>
+</BaseLayout>

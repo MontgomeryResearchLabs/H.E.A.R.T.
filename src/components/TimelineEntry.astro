@@ -1,0 +1,272 @@
+---
+/**
+ * TimelineEntry.astro — Individual Timeline Item
+ * =================================================
+ * Renders a single entry on the timeline page. Supports four types:
+ *
+ *   1. **photo**     → A responsive masonry-style grid of images with
+ *                      optional captions. Each image is clickable and
+ *                      opens the global LightboxViewer via a custom event.
+ *
+ *   2. **video**     → A grid of HTML5 video players with native controls,
+ *                      poster thumbnails, and optional captions. Videos
+ *                      use preload="metadata" to avoid downloading full
+ *                      files until the user hits play.
+ *
+ *   3. **text**      → Delegated to <TextBlock /> with the appropriate
+ *                      styling variant (poem, testimonial, etc.).
+ *
+ *   4. **milestone** → A decorated card with icon, title, and description
+ *                      for anniversary/engagement/life events.
+ *
+ * Every entry includes:
+ *   - An `id` attribute so CalendarNav and landing-page photos can
+ *     deep-link directly to it.
+ *   - A formatted date header.
+ *   - A fade-in-up entrance animation (driven by the global
+ *     IntersectionObserver script in BaseLayout).
+ *
+ * Props — mirror the content collection schema.
+ */
+
+import TextBlock from './TextBlock.astro';
+import { formatDate } from '../utils/dateUtils';
+import { getImageErrorHandler } from '../utils/imageLoader';
+
+interface Props {
+  /** Unique slug for scroll anchors */
+  id: string;
+  /** Date of this timeline entry */
+  date: Date;
+  /** Entry type discriminator — now includes 'video' */
+  type: 'photo' | 'video' | 'text' | 'milestone';
+  /** Images for 'photo' entries */
+  images?: Array<{ src: string; alt: string; caption?: string }>;
+  /** Videos for 'video' entries */
+  videos?: Array<{ src: string; poster?: string; alt: string; caption?: string }>;
+  /** Prose content for 'text' entries */
+  content?: string;
+  /** Styling variant for 'text' entries */
+  textType?: 'description' | 'poem' | 'testimonial' | 'paragraph';
+  /** Milestone metadata */
+  milestone?: { title: string; description: string; icon?: string };
+}
+
+const { id, date, type, images, videos, content, textType, milestone } = Astro.props;
+
+/** Human-readable date label, e.g. "July 4, 2023" */
+const dateLabel = formatDate(date, 'long');
+
+/** Generate the month key for the CalendarNav scroll target */
+const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+---
+
+<article
+  id={id}
+  data-month={monthKey}
+  class="fade-in-up mb-12 md:mb-20 px-4 md:px-0"
+>
+  {/* ---- Date header ---- */}
+  <time
+    datetime={date.toISOString()}
+    class="
+      block text-xs md:text-sm font-sans text-valentine-pink-400/70
+      uppercase tracking-widest mb-3 md:mb-4
+    "
+  >
+    {dateLabel}
+  </time>
+
+  {/* ==== PHOTO TYPE ==== */}
+  {type === 'photo' && images && images.length > 0 && (
+    <div
+      class:list={[
+        'grid gap-3 md:gap-4',
+        images.length === 1
+          ? 'grid-cols-1 max-w-2xl'
+          : images.length === 2
+            ? 'grid-cols-1 sm:grid-cols-2 max-w-3xl'
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl',
+        'mx-auto',
+      ]}
+    >
+      {images.map((img, idx) => (
+        <figure class="group cursor-pointer" data-lightbox-trigger>
+          <div class="photo-frame overflow-hidden rounded-md aspect-[4/5]">
+            <img
+              src={img.src}
+              alt={img.alt}
+              loading="lazy"
+              decoding="async"
+              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onerror={getImageErrorHandler()}
+            />
+          </div>
+          {img.caption && (
+            <figcaption class="mt-2 text-xs md:text-sm text-valentine-pink-400/60 font-body italic text-center">
+              {img.caption}
+            </figcaption>
+          )}
+        </figure>
+      ))}
+    </div>
+  )}
+
+  {/* ==== VIDEO TYPE ==== */}
+  {type === 'video' && videos && videos.length > 0 && (
+    <div
+      class:list={[
+        'grid gap-3 md:gap-4',
+        /**
+         * Adaptive grid columns based on video count:
+         * - 1 video  → single column, max-width constrained for a cinematic feel
+         * - 2 videos → side by side on tablet+
+         * - 3+ videos → responsive 2-3 column grid
+         */
+        videos.length === 1
+          ? 'grid-cols-1 max-w-3xl'
+          : videos.length === 2
+            ? 'grid-cols-1 sm:grid-cols-2 max-w-4xl'
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl',
+        'mx-auto',
+      ]}
+    >
+      {videos.map((video) => (
+        <figure class="group">
+          <div class="relative overflow-hidden rounded-lg shadow-md border border-valentine-pink-200/30 bg-black/5">
+            {/*
+              HTML5 video element with:
+              - controls:        native play/pause/scrub/volume/fullscreen
+              - preload=metadata: only download dimensions + duration, not the whole file
+              - playsinline:     prevents iPhone from auto-fullscreening
+              - poster:          optional thumbnail shown before play
+            */}
+            <video
+              controls
+              preload="metadata"
+              playsinline
+              poster={video.poster}
+              class="w-full rounded-lg"
+              aria-label={video.alt}
+            >
+              <source src={video.src} type={
+                video.src.endsWith('.webm') ? 'video/webm'
+                : video.src.endsWith('.mov') ? 'video/quicktime'
+                : 'video/mp4'
+              } />
+              {/* Fallback text for browsers that don't support <video> */}
+              <p class="p-4 text-sm text-valentine-pink-400">
+                Your browser doesn't support video playback.
+                <a href={video.src} class="underline">Download the video</a> instead.
+              </p>
+            </video>
+          </div>
+          {video.caption && (
+            <figcaption class="mt-2 text-xs md:text-sm text-valentine-pink-400/60 font-body italic text-center">
+              {video.caption}
+            </figcaption>
+          )}
+        </figure>
+      ))}
+    </div>
+  )}
+
+  {/* ==== TEXT TYPE ==== */}
+  {type === 'text' && content && (
+    <TextBlock content={content} textType={textType ?? 'paragraph'} />
+  )}
+
+  {/* ==== MILESTONE TYPE ==== */}
+  {type === 'milestone' && milestone && (
+    <div class="milestone-card max-w-3xl mx-auto text-center">
+      {/* Icon */}
+      {milestone.icon && (
+        <span class="text-4xl md:text-5xl block mb-3" role="img" aria-label={milestone.title}>
+          {milestone.icon}
+        </span>
+      )}
+      {/* Title */}
+      <h3 class="text-xl md:text-2xl font-display text-valentine-pink-700 mb-2">
+        {milestone.title}
+      </h3>
+      {/* Description */}
+      <p class="text-valentine-pink-500/70 font-body leading-relaxed max-w-lg mx-auto">
+        {milestone.description}
+      </p>
+
+      {/* ---- Milestone photos (optional) ---- */}
+      {/*
+        When a milestone entry includes an `images` array, the photos
+        render below the title/description inside the milestone card.
+        They're clickable and open the lightbox just like photo entries.
+      */}
+      {images && images.length > 0 && (
+        <div
+          class:list={[
+            'grid gap-3 md:gap-4 mt-6',
+            images.length === 1
+              ? 'grid-cols-1 max-w-md mx-auto'
+              : images.length === 2
+                ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto'
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mx-auto',
+          ]}
+        >
+          {images.map((img, idx) => (
+            <figure class="group cursor-pointer" data-lightbox-trigger>
+              <div class="photo-frame overflow-hidden rounded-md aspect-[4/5]">
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  loading="lazy"
+                  decoding="async"
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onerror={getImageErrorHandler()}
+                />
+              </div>
+              {img.caption && (
+                <figcaption class="mt-2 text-xs md:text-sm text-valentine-pink-400/60 font-body italic text-center">
+                  {img.caption}
+                </figcaption>
+              )}
+            </figure>
+          ))}
+        </div>
+      )}
+    </div>
+  )}
+</article>
+
+<!--
+  Client-side script: attach click handlers to photos so they open
+  the LightboxViewer component with the correct image set and index.
+  This fires for photo entries AND milestone entries that include images.
+  Videos don't need this — they use native HTML5 controls.
+-->
+<script define:vars={{ id, images }}>
+  // Attach lightbox triggers for any entry with images (photo or milestone)
+  if (images && images.length > 0) {
+    document.addEventListener('DOMContentLoaded', () => {
+      const article = document.getElementById(id);
+      if (!article) return;
+
+      const triggers = article.querySelectorAll('[data-lightbox-trigger]');
+      triggers.forEach((trigger, idx) => {
+        trigger.addEventListener('click', () => {
+          // Dispatch a custom event that LightboxViewer listens for
+          window.dispatchEvent(
+            new CustomEvent('open-lightbox', {
+              detail: {
+                images: images.map((img) => ({
+                  src: img.src,
+                  alt: img.alt,
+                  caption: img.caption ?? undefined,
+                })),
+                index: idx,
+              },
+            }),
+          );
+        });
+      });
+    });
+  }
+</script>

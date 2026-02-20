@@ -1,0 +1,26 @@
+{
+  "id": "one-year-anniversary",
+  "date": "2024-09-29T00:00:00-04:00",
+  "type": "milestone",
+  "location": {
+    "name": "Atlanta, Georgia",
+    "latitude": 33.7490,
+    "longitude": -84.3880
+  },
+  "milestone": {
+    "title": "One Year Together",
+    "description": "365 days of love, laughter, and growing together. Here's to forever.",
+    "icon": "🎉"
+  },
+  "images": [
+    {
+      "src": "/src/assets/images/2026/12/7.jpg",
+      "alt": "us"
+    },
+    {
+      "src": "/src/assets/images/2026/12/8.jpg",
+      "alt": "us"
+    }
+  ]
+
+}

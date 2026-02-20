@@ -1,0 +1,78 @@
+---
+/**
+ * TextBlock.astro — Styled Text Content Block
+ * =============================================
+ * Renders a text entry from the timeline with visual styling that
+ * matches its `textType`:
+ *
+ *   - **poem**        → Centred, italic, serif font, generous line-height
+ *   - **testimonial** → Left border accent, italic, quote marks
+ *   - **description** → Standard prose, readable max-width
+ *   - **paragraph**   → Same as description (default)
+ *
+ * The `content` prop accepts plain text (newlines are preserved) and is
+ * rendered safely — no `innerHTML` is used. For Markdown support in a
+ * future version, swap the rendering logic to use a sanitised Markdown
+ * parser server-side.
+ *
+ * Props
+ * -----
+ * - `content`  — The text to display
+ * - `textType` — Visual variant (see enum above)
+ */
+
+interface Props {
+  /** The prose content to render */
+  content: string;
+  /** Styling variant */
+  textType: 'description' | 'poem' | 'testimonial' | 'paragraph';
+}
+
+const { content, textType } = Astro.props;
+
+/**
+ * Map textType to the corresponding CSS class defined in global.css.
+ * Falls back to generic paragraph styling for unknown types.
+ */
+const styleClassMap: Record<string, string> = {
+  poem:        'text-poem',
+  testimonial: 'text-testimonial',
+  description: 'text-description',
+  paragraph:   'text-paragraph',
+};
+
+const styleClass = styleClassMap[textType] ?? 'text-paragraph';
+
+/**
+ * Split the content by double-newlines to create paragraph elements.
+ * This preserves the author's intended paragraph breaks without
+ * needing full Markdown parsing.
+ */
+const paragraphs = content.split(/\n\n+/).filter(Boolean);
+---
+
+<div class={`${styleClass} max-w-2xl mx-auto space-y-4`}>
+  {textType === 'testimonial' && (
+    <!-- Opening quote mark (decorative) -->
+    <span
+      class="block text-4xl text-valentine-pink-500/30 font-display leading-none select-none"
+      aria-hidden="true"
+    >
+      "
+    </span>
+  )}
+
+  {paragraphs.map((para) => (
+    <p>{para}</p>
+  ))}
+
+  {textType === 'testimonial' && (
+    <!-- Closing quote mark (decorative) -->
+    <span
+      class="block text-4xl text-valentine-pink-500/30 font-display leading-none text-right select-none"
+      aria-hidden="true"
+    >
+      "
+    </span>
+  )}
+</div>

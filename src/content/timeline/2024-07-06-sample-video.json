@@ -1,0 +1,17 @@
+{
+  "id": "mexico-sunset-video",
+  "date": "2024-07-06T19:00:00-05:00",
+  "type": "photo",
+  "location": {
+    "name": "Miami, Florida",
+    "latitude": 25.761681,
+    "longitude": -80.191788
+  },
+  "images": [
+    {
+      "src": "/src/assets/images/2026/12/6.jpg",
+      "alt": "us",
+      "caption": "Yacth Party for mom's birthday"
+    }
+  ]
+}

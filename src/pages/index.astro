@@ -1,0 +1,92 @@
+---
+/**
+ * index.astro — Landing Page
+ * ============================
+ * Full-screen hero page with:
+ *   - Dark grid background (from global.css `.grid-bg`)
+ *   - "JRAMMELL" branding in the top-left corner
+ *   - Floating photo frames animated by the FloatingPhotos React island
+ *   - A subtle call-to-action to scroll / click into the timeline
+ *
+ * The page fetches a random selection of ~18 photos from the timeline
+ * content collection and passes them to the FloatingPhotos component.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import FloatingPhotos from '../components/FloatingPhotos.tsx';
+import { getCollection } from 'astro:content';
+import { formatDate } from '../utils/dateUtils';
+import { pickRandom } from '../utils/imageLoader';
+
+// Fetch all photo entries from the timeline collection
+const allEntries = await getCollection('timeline');
+const photoEntries = allEntries.filter(
+  (entry) => entry.data.type === 'photo' && entry.data.images && entry.data.images.length > 0,
+);
+
+// Build flat photo list with metadata for the FloatingPhotos component
+const allPhotos = photoEntries.flatMap((entry) =>
+  (entry.data.images ?? []).map((img) => ({
+    src:        img.src,
+    alt:        img.alt,
+    date:       formatDate(entry.data.date, 'short'),
+    timelineId: entry.data.id,
+  })),
+);
+
+// Pick ~18 random photos for the hero (avoids overcrowding)
+const heroPhotos = pickRandom(allPhotos, 18);
+---
+
+<BaseLayout title="relationship — Our Love Story">
+  <main class="relative w-screen h-screen overflow-hidden" style="background: linear-gradient(to bottom, #dc2626 0%, #ec4899 25%, #fbcfe8 50%, #ffffff 75%, #ffffff 100%);">
+
+    <!-- Branding: top-left corner -->
+    <header class="absolute top-6 left-6 md:top-8 md:left-8 z-20">
+      <a
+        href="/"
+        class="font-display text-2xl md:text-3xl lg:text-4xl text-white drop-shadow-lg tracking-[0.25em] uppercase hover:text-valentine-pink-300 transition-colors duration-300 select-none"
+      >
+        relationship timeline
+      </a>
+    </header>
+
+    <!-- Floating photos (React island — hydrates immediately) -->
+    <FloatingPhotos photos={heroPhotos} client:load />
+
+    <!-- Centre CTA overlay -->
+    <div class="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+      <h1 class="sr-only">JRAMMELL — Our Love Story Timeline</h1>
+
+      <!-- Subtle tagline -->
+      <p class="text-white/80 font-body text-sm md:text-base italic mb-4 tracking-wide drop-shadow-md">
+        our story, one moment at a time
+      </p>
+
+      <!-- Enter timeline button -->
+      <a
+        href="/timeline"
+        class="pointer-events-auto inline-flex items-center gap-2 px-6 py-3 rounded-full border border-valentine-pink-500/40 bg-valentine-pink-500/10 backdrop-blur-sm text-valentine-pink-300 font-sans text-sm md:text-base hover:bg-valentine-pink-500/20 hover:border-valentine-pink-400/60 transition-all duration-300 group"
+      >
+        View Timeline
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"
+          class="transition-transform duration-300 group-hover:translate-x-1"
+        >
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </a>
+    </div>
+
+    <!-- Gradient vignette for depth -->
+    <div
+      class="absolute inset-0 z-[1] pointer-events-none"
+      style="background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.6) 100%);"
+    >
+    </div>
+  </main>
+</BaseLayout>
